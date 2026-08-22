@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any
 from typing import Protocol
 
 from application_orchestrator.models import (
@@ -15,6 +16,10 @@ class SessionStore(Protocol):
     def create_session(self, session: ApplicationSession) -> ApplicationSession: ...
 
     def get_session(self, session_id: str) -> ApplicationSession | None: ...
+
+    def list_sessions(self) -> list[ApplicationSession]: ...
+
+    def update_session(self, session_id: str, updates: dict[str, Any]) -> ApplicationSession: ...
 
     def set_status(self, session_id: str, status: SessionStatus, current_step: str) -> ApplicationSession: ...
 

@@ -71,11 +71,19 @@ class ApplicationSession(StrictModel):
     job_url: str
     status: SessionStatus = SessionStatus.CREATED
     current_step: str = "created"
+    workflow_name: str | None = None
+    workflow_version: str | None = None
+    current_action: str | None = None
+    action_payload: dict[str, Any] = Field(default_factory=dict)
+    last_checkpoint: str | None = None
     user_id: str = "local-user"
+    external_thread_id: str | None = None
+    telegram_chat_id: str | None = None
     job_snapshot: dict[str, Any] = Field(default_factory=dict)
     known_answers: dict[str, str] = Field(default_factory=dict)
     pending_question_id: str | None = None
     resume_artifact: ArtifactReference | None = None
+    attempt_count: int = 0
+    error_context: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
-

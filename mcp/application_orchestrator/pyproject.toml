@@ -14,6 +14,9 @@ dependencies = [
   "python-dotenv>=1.0.1",
 ]
 
+[project.scripts]
+jobautomation-telegram-webhook = "application_orchestrator.telegram_webhook_server:main"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 

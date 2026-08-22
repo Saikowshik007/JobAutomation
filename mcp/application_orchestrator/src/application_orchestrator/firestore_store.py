@@ -68,34 +68,44 @@ class FirestoreSessionStore(SessionStore):
             return None
         return self._to_session(snapshot.to_dict(), session_id=session_id)
 
+    def list_sessions(self) -> list[ApplicationSession]:
+        sessions: list[ApplicationSession] = []
+        for snapshot in self.client.collection(self.settings.sessions_collection).stream():
+            payload = snapshot.to_dict() or {}
+            session_id = payload.get("session_id") or getattr(snapshot, "id", None)
+            if not session_id:
+                continue
+            sessions.append(self._to_session(payload, session_id=session_id))
+        return sessions
+
+    def update_session(self, session_id: str, updates: dict[str, Any]) -> ApplicationSession:
+        payload = dict(updates)
+        payload["updated_at"] = _utc_now().isoformat()
+        self._session_doc(session_id).set(payload, merge=True)
+        return self._require_session(session_id)
+
     def set_status(self, session_id: str, status: SessionStatus, current_step: str) -> ApplicationSession:
         updates = {
             "status": status.value,
             "current_step": current_step,
-            "updated_at": _utc_now().isoformat(),
         }
-        self._session_doc(session_id).set(updates, merge=True)
-        return self._require_session(session_id)
+        return self.update_session(session_id, updates)
 
     def update_job_snapshot(self, session_id: str, job_snapshot: dict) -> ApplicationSession:
         updates = {
             "job_snapshot": job_snapshot,
             "status": SessionStatus.JOB_PARSED.value,
             "current_step": "job_parsed",
-            "updated_at": _utc_now().isoformat(),
         }
-        self._session_doc(session_id).set(updates, merge=True)
-        return self._require_session(session_id)
+        return self.update_session(session_id, updates)
 
     def set_resume_artifact(self, session_id: str, artifact: ArtifactReference) -> ApplicationSession:
         updates = {
             "resume_artifact": _serialize_model(artifact),
             "status": SessionStatus.RESUME_GENERATED.value,
             "current_step": "resume_generated",
-            "updated_at": _utc_now().isoformat(),
         }
-        self._session_doc(session_id).set(updates, merge=True)
-        return self._require_session(session_id)
+        return self.update_session(session_id, updates)
 
     def upsert_answer(self, session_id: str, field_key: str, answer: str) -> ApplicationSession:
         session = self._require_session(session_id)
@@ -103,10 +113,8 @@ class FirestoreSessionStore(SessionStore):
         answers[field_key] = answer
         updates = {
             "known_answers": answers,
-            "updated_at": _utc_now().isoformat(),
         }
-        self._session_doc(session_id).set(updates, merge=True)
-        return self._require_session(session_id)
+        return self.update_session(session_id, updates)
 
     def create_pending_question(self, session_id: str, question: PendingQuestion) -> PendingQuestion:
         session_ref = self._session_doc(session_id)

@@ -1,0 +1,11 @@
+flowchart TD
+    A[User or Agent] --> B[Job Intelligence MCP]
+    B --> C[Playwright Fetch]
+    B --> D[HTML Parsing]
+    B --> E[Metadata Extraction]
+    B --> F[LLM Text Builder]
+
+    D --> G[Platform Detection]
+    D --> H[Section Extraction]
+    E --> I[JSON-LD + Meta Tags]
+    F --> J[Structured MCP Response]

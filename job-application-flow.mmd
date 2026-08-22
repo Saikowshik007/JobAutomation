@@ -1,0 +1,8 @@
+flowchart TD
+    A[Job URL] --> B[Open URL with Playwright]
+    B --> C[Render Page]
+    C --> D[Extract Job Metadata]
+    C --> E[Extract Description Sections]
+    D --> F[Build Compact LLM Text]
+    E --> F
+    F --> G[Return MCP Tool Result]

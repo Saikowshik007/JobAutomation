@@ -1,0 +1,53 @@
+flowchart TD
+    A[User Input: Job URL] --> B[Ingress Layer]
+    B --> B1[Telegram / Web App / API]
+    B1 --> C[Create or Load Session]
+
+    C --> D[Orchestrator]
+    D --> E[Job Intelligence MCP]
+    E --> E1[get_llm_text_for_this_url]
+    E1 --> F[Structured Content: llm_input_text]
+
+    F --> G[LLM Job Understanding]
+    G --> G1[Extract key requirements]
+    G --> G2[Identify responsibilities]
+    G --> G3[Detect seniority / skills]
+
+    D --> H[Resume Source Loader]
+    H --> H1[Existing Resume]
+    H --> H2[Profile / Known Answers]
+    H --> H3[LaTeX Template]
+
+    G --> I[Resume Tailoring LLM]
+    H --> I
+    I --> J[Tailored Resume Data]
+
+    J --> K[Document Engine]
+    K --> K1[Render .tex]
+    K1 --> K2[Generate PDF]
+
+    D --> L[Application Engine]
+    L --> L1[Open Job Application]
+    L1 --> L2[Fill Known Fields]
+    L2 --> L3[Upload Tailored Resume]
+
+    L3 --> M{Unknown Question?}
+    M -- Yes --> N[Persist Session State]
+    N --> O[Send User Prompt]
+    O --> O1[Telegram / Web App]
+    O1 --> P[User Reply]
+    P --> Q[Resume Session]
+    Q --> D
+
+    M -- No --> R{Ready to Submit?}
+    R -- No --> L2
+    R -- Yes --> S[Final Review Summary]
+    S --> T[User Confirmation]
+
+    T --> U{Approved?}
+    U -- No --> V[Abort / Save Draft]
+    U -- Yes --> W[Submit Application]
+    W --> X[Audit Log]
+    X --> X1[Store answers]
+    X --> X2[Store artifacts]
+    X --> X3[Store status / screenshots]

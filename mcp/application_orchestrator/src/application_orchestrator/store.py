@@ -1,0 +1,31 @@
+from __future__ import annotations
+
+from typing import Protocol
+
+from application_orchestrator.models import (
+    ApplicationSession,
+    ArtifactReference,
+    PendingQuestion,
+    SessionEvent,
+    SessionStatus,
+)
+
+
+class SessionStore(Protocol):
+    def create_session(self, session: ApplicationSession) -> ApplicationSession: ...
+
+    def get_session(self, session_id: str) -> ApplicationSession | None: ...
+
+    def set_status(self, session_id: str, status: SessionStatus, current_step: str) -> ApplicationSession: ...
+
+    def update_job_snapshot(self, session_id: str, job_snapshot: dict) -> ApplicationSession: ...
+
+    def set_resume_artifact(self, session_id: str, artifact: ArtifactReference) -> ApplicationSession: ...
+
+    def upsert_answer(self, session_id: str, field_key: str, answer: str) -> ApplicationSession: ...
+
+    def create_pending_question(self, session_id: str, question: PendingQuestion) -> PendingQuestion: ...
+
+    def resolve_pending_question(self, session_id: str, question_id: str, answer: str) -> PendingQuestion: ...
+
+    def append_event(self, session_id: str, event: SessionEvent) -> SessionEvent: ...

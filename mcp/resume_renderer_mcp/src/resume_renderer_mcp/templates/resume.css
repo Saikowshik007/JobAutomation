@@ -1,0 +1,132 @@
+@page {
+  size: A4;
+  margin: 0.4in;
+}
+
+html {
+  color: #000;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 10pt;
+  line-height: 1.24;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  text-rendering: geometricPrecision;
+}
+
+body {
+  margin: 0;
+  background: #fff;
+}
+
+.resume-page {
+  width: 100%;
+  max-width: 7.47in;
+  margin: 0 auto;
+}
+
+.resume-header {
+  text-align: center;
+  margin-bottom: 0.11in;
+  break-after: avoid;
+}
+
+.resume-header h1 {
+  margin: 0 0 2px;
+  font-size: 13pt;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+}
+
+.contact-line {
+  margin: 0;
+  font-size: 9pt;
+  line-height: 1.12;
+}
+
+.resume-section {
+  margin-top: 0.08in;
+  break-inside: auto;
+}
+
+.resume-section h2 {
+  margin: 0 0 3px;
+  padding-bottom: 1px;
+  border-bottom: 1px solid #000;
+  font-size: 10pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  break-after: avoid;
+}
+
+.summary,
+.skill-line,
+.project-heading {
+  margin: 0 0 3px;
+  orphans: 3;
+  widows: 3;
+}
+
+.block {
+  margin-bottom: 4px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.entry {
+  margin-bottom: 1px;
+}
+
+.two-column-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.left {
+  min-width: 0;
+}
+
+.right {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.strong {
+  font-weight: 700;
+}
+
+.emphasis {
+  font-style: italic;
+}
+
+.meta {
+  text-align: right;
+}
+
+.project-tech {
+  margin-left: 6px;
+  font-size: 8pt;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.project-heading a {
+  color: #0000ee;
+  text-decoration: none;
+}
+
+.bullet-list {
+  margin: 1px 0 0;
+  padding: 0;
+  padding-left: 16px;
+  list-style-position: outside;
+}
+
+.bullet-list li {
+  margin: 0 0 1px;
+  padding-left: 1px;
+  orphans: 2;
+  widows: 2;
+}

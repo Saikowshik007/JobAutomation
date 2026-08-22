@@ -1,30 +1,20 @@
 from __future__ import annotations
 
+import asyncio
+import html
 import re
+from importlib import resources
 from pathlib import Path
-from xml.sax.saxutils import escape
+from string import Template
 
 import yaml
+from playwright.async_api import async_playwright
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
-from reportlab.lib.colors import black
-from reportlab.lib.enums import TA_CENTER
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import inch
-from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 
 RESUMES_DIRNAME = "resume"
 DEFAULT_TEMPLATE_PATH = Path("templates") / "resume-template.yaml"
 DEFAULT_OUTPUT_ROOT = Path(__file__).resolve().parents[4]
-PAGE_WIDTH, _ = A4
-PAGE_HORIZONTAL_PADDING = 40
-PAGE_VERTICAL_PADDING = 30
-CONTENT_WIDTH = PAGE_WIDTH - (PAGE_HORIZONTAL_PADDING * 2)
-LEFT_COLUMN_WIDTH = 352
-RIGHT_COLUMN_WIDTH = CONTENT_WIDTH - LEFT_COLUMN_WIDTH
-BULLET_COLUMN_WIDTH = 8
-BULLET_TEXT_WIDTH = CONTENT_WIDTH - BULLET_COLUMN_WIDTH
 
 
 class StrictModel(BaseModel):
@@ -148,7 +138,8 @@ def render_resume_from_yaml(
     pdf_path = artifact_dir / f"{safe_candidate}.pdf"
     yaml_path.write_text(resume_yaml, encoding="utf-8")
 
-    build_resume_pdf(data, pdf_path)
+    html_document = build_resume_html(data)
+    asyncio.run(render_pdf_from_html(html_document, pdf_path))
 
     if not pdf_path.exists():
         raise RuntimeError(f"PDF was not created at expected path: {pdf_path}")
@@ -175,263 +166,203 @@ def parse_resume_yaml(resume_yaml: str) -> ResumeData:
         raise ValueError(f"Resume data does not match required schema: {exc}") from exc
 
 
-def build_resume_pdf(data: ResumeData, pdf_path: Path) -> None:
-    styles = build_styles()
-    story: list[object] = []
-
-    story.append(Paragraph(escape(data.basic.name.upper()), styles["header"]))
-    contact_parts = [
-        data.basic.email,
-        data.basic.phone,
-        data.basic.address,
-        *data.basic.websites,
+def build_resume_html(data: ResumeData) -> str:
+    template = _load_package_text("templates/resume.html")
+    styles = _load_package_text("templates/resume.css")
+    content = [
+        _render_header(data.basic),
+        _render_objective(data.objective),
+        _render_experience(data.experiences),
+        _render_projects(data.projects),
+        _render_education(data.education),
+        _render_skills(data.skills),
     ]
-    story.append(Paragraph(escape(" | ".join(filter(None, contact_parts))), styles["contact"]))
-    story.append(Spacer(1, 0.12 * inch))
+    return Template(template).substitute(
+        styles=styles,
+        title=_escape_text(f"{data.basic.name} Resume"),
+        candidate_name=_escape_text(data.basic.name),
+        content="\n".join(part for part in content if part),
+    )
 
-    if data.objective.strip():
-        add_section(story, "Professional Summary", styles)
-        story.append(Paragraph(escape(data.objective), styles["body"]))
-        story.append(Spacer(1, 0.08 * inch))
 
-    add_section(story, "Experience", styles)
-    for experience in data.experiences:
-        add_experience_block(story, experience, styles)
+async def render_pdf_from_html(html_document: str, pdf_path: Path) -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(headless=True)
+        try:
+            page = await browser.new_page()
+            await page.set_content(html_document, wait_until="load")
+            await page.emulate_media(media="print")
+            await page.pdf(
+                path=str(pdf_path),
+                format="A4",
+                print_background=True,
+                margin={
+                    "top": "0.4in",
+                    "right": "0.4in",
+                    "bottom": "0.4in",
+                    "left": "0.4in",
+                },
+            )
+        except Exception as exc:  # pragma: no cover - playwright exception types vary
+            raise RuntimeError(f"Failed to build PDF with Chromium: {exc}") from exc
+        finally:
+            await browser.close()
 
-    add_section(story, "Projects", styles)
-    for project in data.projects:
-        add_project_block(story, project, styles)
 
-    add_section(story, "Education", styles)
-    for education in data.education:
-        add_education_block(story, education, styles)
+def _render_header(basic: BasicInfo) -> str:
+    contact_parts = [
+        basic.email,
+        basic.phone,
+        basic.address,
+        *basic.websites,
+    ]
+    return "\n".join(
+        [
+            f"<header class='resume-header'><h1>{_escape_text(basic.name.upper())}</h1>",
+            f"<p class='contact-line'>{_escape_text(' | '.join(filter(None, contact_parts)))}</p></header>",
+        ]
+    )
 
-    add_section(story, "Skills", styles)
-    for skill_category in data.skills:
-        add_skills_block(story, skill_category, styles)
 
-    try:
-        document = SimpleDocTemplate(
-            str(pdf_path),
-            pagesize=A4,
-            leftMargin=PAGE_HORIZONTAL_PADDING,
-            rightMargin=PAGE_HORIZONTAL_PADDING,
-            topMargin=PAGE_VERTICAL_PADDING,
-            bottomMargin=PAGE_VERTICAL_PADDING,
+def _render_objective(objective: str) -> str:
+    if not objective.strip():
+        return ""
+    return _wrap_section(
+        "Professional Summary",
+        f"<p class='summary'>{_escape_text(objective)}</p>",
+    )
+
+
+def _render_experience(experiences: list[ExperienceEntry]) -> str:
+    blocks: list[str] = []
+    for experience in experiences:
+        title_rows = []
+        for index, title in enumerate(experience.titles):
+            company = experience.company if index == 0 else ""
+            date_range = f"{title.startdate} - {title.enddate}"
+            location = experience.location if index == 0 else ""
+            title_rows.append(
+                "\n".join(
+                    [
+                        "<div class='entry'>",
+                        _two_column_row(company, date_range, left_class="strong", right_class="meta"),
+                        _two_column_row(title.name, location, left_class="emphasis", right_class="meta emphasis"),
+                        "</div>",
+                    ]
+                )
+            )
+        bullets = _render_bullet_list(experience.highlights)
+        blocks.append(f"<article class='block'>{''.join(title_rows)}{bullets}</article>")
+    return _wrap_section("Experience", "".join(blocks))
+
+
+def _render_projects(projects: list[ProjectEntry]) -> str:
+    blocks: list[str] = []
+    for project in projects:
+        heading = _escape_text(project.name)
+        if project.link.strip():
+            heading = f"<a href='{_escape_attr(project.link)}'>{heading}</a>"
+        tech = (
+            f"<span class='project-tech'>({_escape_text(project.technologies)})</span>"
+            if project.technologies.strip()
+            else ""
         )
-        document.build(story)
-    except Exception as exc:  # pragma: no cover - reportlab exception types vary
-        raise RuntimeError(f"Failed to build PDF: {exc}") from exc
-
-
-def build_styles() -> dict[str, ParagraphStyle]:
-    sample = getSampleStyleSheet()
-    return {
-        "header": ParagraphStyle(
-            "ResumeHeader",
-            parent=sample["Heading1"],
-            fontName="Times-Bold",
-            fontSize=13,
-            leading=14,
-            alignment=TA_CENTER,
-            textColor=black,
-            spaceAfter=2,
-        ),
-        "contact": ParagraphStyle(
-            "ResumeContact",
-            parent=sample["Normal"],
-            fontName="Times-Roman",
-            fontSize=9,
-            leading=10,
-            alignment=TA_CENTER,
-            spaceAfter=5,
-        ),
-        "section": ParagraphStyle(
-            "ResumeSection",
-            parent=sample["Heading2"],
-            fontName="Times-Bold",
-            fontSize=10,
-            leading=11,
-            textColor=black,
-            spaceBefore=8,
-            spaceAfter=3,
-            textTransform="uppercase",
-        ),
-        "body": ParagraphStyle(
-            "ResumeBody",
-            parent=sample["Normal"],
-            fontName="Times-Roman",
-            fontSize=10,
-            leading=13,
-            spaceAfter=3,
-        ),
-        "bodyBold": ParagraphStyle(
-            "ResumeBodyBold",
-            parent=sample["Normal"],
-            fontName="Times-Bold",
-            fontSize=10,
-            leading=13,
-            spaceAfter=2,
-        ),
-        "bodyItalic": ParagraphStyle(
-            "ResumeBodyItalic",
-            parent=sample["Normal"],
-            fontName="Times-Italic",
-            fontSize=10,
-            leading=13,
-            spaceAfter=1,
-        ),
-        "bullet": ParagraphStyle(
-            "ResumeBullet",
-            parent=sample["Normal"],
-            fontName="Times-Roman",
-            fontSize=10,
-            leading=13,
-            leftIndent=0,
-            firstLineIndent=0,
-            spaceAfter=1,
-        ),
-        "bulletSymbol": ParagraphStyle(
-            "ResumeBulletSymbol",
-            parent=sample["Normal"],
-            fontName="Times-Roman",
-            fontSize=10,
-            leading=13,
-            alignment=TA_CENTER,
-        ),
-        "rightMeta": ParagraphStyle(
-            "ResumeRightMeta",
-            parent=sample["Normal"],
-            fontName="Times-Roman",
-            fontSize=10,
-            leading=13,
-            alignment=2,
-        ),
-        "rightMetaItalic": ParagraphStyle(
-            "ResumeRightMetaItalic",
-            parent=sample["Normal"],
-            fontName="Times-Italic",
-            fontSize=10,
-            leading=13,
-            alignment=2,
-        ),
-    }
-
-
-def add_section(story: list[object], title: str, styles: dict[str, ParagraphStyle]) -> None:
-    story.append(Paragraph(escape(title), styles["section"]))
-    story.append(
-        HRFlowable(
-            width="100%",
-            thickness=1,
-            color=black,
-            spaceBefore=0,
-            spaceAfter=3,
-            lineCap="square",
+        bullets = _render_bullet_list(project.highlights)
+        blocks.append(
+            "\n".join(
+                [
+                    "<article class='block'>",
+                    f"<p class='project-heading'><span class='strong'>{heading}</span>{tech}</p>",
+                    bullets,
+                    "</article>",
+                ]
+            )
         )
-    )
+    return _wrap_section("Projects", "".join(blocks))
 
 
-def add_experience_block(
-    story: list[object],
-    experience: ExperienceEntry,
-    styles: dict[str, ParagraphStyle],
-) -> None:
-    title = experience.titles[0]
-    story.append(two_column_row(experience.company, f"{title.startdate} - {title.enddate}", styles))
-    story.append(two_column_row(title.name, experience.location, styles, left_style="bodyItalic", right_style="rightMetaItalic"))
-    for bullet in experience.highlights:
-        story.append(bullet_row(bullet, styles))
-    story.append(Spacer(1, 5))
+def _render_education(education_entries: list[EducationEntry]) -> str:
+    blocks: list[str] = []
+    for education in education_entries:
+        degree_rows = []
+        for index, degree in enumerate(education.degrees):
+            school = education.school if index == 0 else ""
+            degree_names = ", ".join(degree.names)
+            left = degree_names
+            if degree.gpa.strip():
+                left = f"{left} (GPA: {degree.gpa})"
+            degree_rows.append(
+                _two_column_row(
+                    f"{school}, {left}" if school else left,
+                    degree.dates,
+                    left_class="strong",
+                    right_class="meta",
+                )
+            )
+        blocks.append(f"<article class='block'>{''.join(degree_rows)}</article>")
+    return _wrap_section("Education", "".join(blocks))
 
 
-def add_project_block(
-    story: list[object],
-    project: ProjectEntry,
-    styles: dict[str, ParagraphStyle],
-) -> None:
-    heading = escape(project.name)
-    if project.link.strip():
-        heading = f"<link href='{escape(project.link)}' color='blue'>{heading}</link>"
-    if project.technologies.strip():
-        heading = f"{heading} <font name='Times-Italic'>({escape(project.technologies)})</font>"
-    story.append(Paragraph(heading, styles["bodyBold"]))
-    for bullet in project.highlights:
-        story.append(bullet_row(bullet, styles))
-    story.append(Spacer(1, 5))
-
-
-def add_education_block(
-    story: list[object],
-    education: EducationEntry,
-    styles: dict[str, ParagraphStyle],
-) -> None:
-    degree = education.degrees[0]
-    degree_names = ", ".join(degree.names)
-    heading = f"{education.school}, {degree_names}"
-    if degree.gpa.strip():
-        heading = f"{heading} (GPA: {degree.gpa})"
-    story.append(two_column_row(heading, degree.dates, styles))
-    story.append(Spacer(1, 5))
-
-
-def add_skills_block(
-    story: list[object],
-    skill_category: SkillCategory,
-    styles: dict[str, ParagraphStyle],
-) -> None:
-    if skill_category.subcategories:
-        for subcategory in skill_category.subcategories:
-            line = f"<font name='Times-Bold'>{escape(subcategory.name)}:</font> {escape(', '.join(subcategory.skills))}"
-            story.append(Paragraph(line, styles["body"]))
-    else:
-        line = f"<font name='Times-Bold'>{escape(skill_category.category)}:</font> {escape(', '.join(skill_category.skills or []))}"
-        story.append(Paragraph(line, styles["body"]))
-
-
-def two_column_row(
-    left: str,
-    right: str,
-    styles: dict[str, ParagraphStyle],
-    *,
-    left_style: str = "bodyBold",
-    right_style: str = "rightMeta",
-) -> Table:
-    table = Table(
-        [[Paragraph(escape(left), styles[left_style]), Paragraph(escape(right), styles[right_style])]],
-        colWidths=[LEFT_COLUMN_WIDTH, RIGHT_COLUMN_WIDTH],
-    )
-    table.setStyle(
-        TableStyle(
-            [
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-            ]
+def _render_skills(skill_categories: list[SkillCategory]) -> str:
+    lines: list[str] = []
+    for category in skill_categories:
+        if category.subcategories:
+            for subcategory in category.subcategories:
+                lines.append(
+                    "<p class='skill-line'>"
+                    f"<span class='strong'>{_escape_text(subcategory.name)}:</span> "
+                    f"{_escape_text(', '.join(subcategory.skills))}"
+                    "</p>"
+                )
+            continue
+        lines.append(
+            "<p class='skill-line'>"
+            f"<span class='strong'>{_escape_text(category.category)}:</span> "
+            f"{_escape_text(', '.join(category.skills or []))}"
+            "</p>"
         )
-    )
-    return table
+    return _wrap_section("Skills", "".join(lines))
 
 
-def bullet_row(text: str, styles: dict[str, ParagraphStyle]) -> Table:
-    table = Table(
-        [[Paragraph("•", styles["bulletSymbol"]), Paragraph(escape(text), styles["bullet"])]],
-        colWidths=[BULLET_COLUMN_WIDTH, BULLET_TEXT_WIDTH],
+def _render_bullet_list(items: list[str]) -> str:
+    bullet_items = "".join(
+        f"<li>{_escape_text(item)}</li>"
+        for item in items
     )
-    table.setStyle(
-        TableStyle(
-            [
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-            ]
-        )
+    return f"<ul class='bullet-list'>{bullet_items}</ul>"
+
+
+def _two_column_row(left: str, right: str, *, left_class: str = "", right_class: str = "") -> str:
+    left_classes = " ".join(part for part in ["left", left_class] if part)
+    right_classes = " ".join(part for part in ["right", right_class] if part)
+    return (
+        "<div class='two-column-row'>"
+        f"<div class='{left_classes}'>{_escape_text(left)}</div>"
+        f"<div class='{right_classes}'>{_escape_text(right)}</div>"
+        "</div>"
     )
-    return table
+
+
+def _wrap_section(title: str, body: str) -> str:
+    return (
+        "<section class='resume-section'>"
+        f"<h2>{_escape_text(title)}</h2>"
+        f"{body}"
+        "</section>"
+    )
+
+
+def _load_package_text(relative_path: str) -> str:
+    package_root = resources.files("resume_renderer_mcp")
+    return package_root.joinpath(relative_path).read_text(encoding="utf-8")
+
+
+def _escape_text(value: str) -> str:
+    return html.escape(value, quote=False)
+
+
+def _escape_attr(value: str) -> str:
+    return html.escape(value, quote=True)
 
 
 def sanitize_path_component(value: str) -> str:

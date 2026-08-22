@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "resume-renderer-mcp"
 version = "0.1.0"
-description = "Lightweight MCP server for rendering resume artifacts from TeX source"
+description = "Lightweight MCP server for rendering resume PDFs from structured YAML"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "mcp>=1.12.0",
+  "playwright>=1.54.0",
   "pydantic>=2.0.0",
   "PyYAML>=6.0.0",
-  "reportlab>=5.0.0",
 ]
 
 [project.scripts]
@@ -20,6 +20,9 @@ resume-renderer-mcp = "resume_renderer_mcp.server:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+
+[tool.setuptools.package-data]
+resume_renderer_mcp = ["templates/*.html", "templates/*.css"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

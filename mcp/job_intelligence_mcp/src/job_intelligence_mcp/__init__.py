@@ -1,0 +1,1 @@
+"""Job Intelligence MCP package."""

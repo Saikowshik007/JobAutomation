@@ -10,7 +10,8 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from application_orchestrator.models import SessionStatus
+from application_orchestrator.models import AgentPhase, SessionStatus
+from application_orchestrator.runner import ApplicationAgentRunner, CodexQuestion, SessionQuestionNotifier
 from application_orchestrator.service import SessionOrchestrator
 
 logger = logging.getLogger(__name__)
@@ -75,6 +76,29 @@ class TelegramBotClient:
             raise RuntimeError(f"Telegram API request failed for {method_name}") from exc
 
 
+class TelegramQuestionNotifier(SessionQuestionNotifier):
+    def __init__(self, bot_client: TelegramBotClient) -> None:
+        self.bot_client = bot_client
+
+    def notify_question(self, session, question: CodexQuestion) -> None:
+        chat_id = session.telegram_chat_id
+        if not chat_id:
+            logger.info("telegram_question_not_sent session_id=%s reason=no_chat_id", session.session_id)
+            return
+        self.bot_client.send_message(chat_id, self._format_question_message(session.session_id, question))
+
+    @staticmethod
+    def _format_question_message(session_id: str, question: CodexQuestion) -> str:
+        return (
+            f"Question for session {session_id}\n"
+            f"{question.prompt}\n"
+            "Reply with:\n"
+            "/reply your answer here\n"
+            "or simply:\n"
+            "/answer your answer here"
+        )
+
+
 class TelegramCommandRouter:
     def __init__(
         self,
@@ -82,10 +106,12 @@ class TelegramCommandRouter:
         *,
         workflow_name: str = "job_application",
         workflow_version: str = "v1",
+        runner: ApplicationAgentRunner | None = None,
     ) -> None:
         self.orchestrator = orchestrator
         self.workflow_name = workflow_name
         self.workflow_version = workflow_version
+        self.runner = runner
 
     def handle_update(self, update: dict[str, Any]) -> list[OutboundTelegramMessage]:
         message = update.get("message") or update.get("edited_message")
@@ -146,6 +172,8 @@ class TelegramCommandRouter:
             action_payload={"job_url": job_url},
             status=SessionStatus.CREATED,
         )
+        if self.runner is not None:
+            self.runner.start(session.session_id)
         return OutboundTelegramMessage(
             chat_id=chat_id,
             text=(
@@ -198,20 +226,23 @@ class TelegramCommandRouter:
             session.session_id,
             question_id=session.pending_question_id,
             answer=answer,
-            current_step="application_started",
+            status=self._status_after_user_answer(session),
+            current_step=self._step_after_user_answer(session),
             current_action="resume_after_user_answer",
             last_checkpoint="telegram_answer_received",
             error_context={},
         )
         self.orchestrator.checkpoint(
             session.session_id,
-            current_step="application_started",
+            current_step=self._step_after_user_answer(session),
             current_action="resume_after_user_answer",
             last_checkpoint="telegram_answer_received",
             action_payload={"field_key": question.field_key, "answer": answer},
             error_context={},
-            status=SessionStatus.APPLICATION_STARTED,
+            status=self._status_after_user_answer(session),
         )
+        if self.runner is not None:
+            self.runner.resume(session.session_id)
         return OutboundTelegramMessage(
             chat_id=chat_id,
             text=(
@@ -284,6 +315,18 @@ class TelegramCommandRouter:
 
         sessions.sort(key=sort_key)
         return sessions[0]
+
+    @staticmethod
+    def _status_after_user_answer(session) -> SessionStatus:
+        if session.active_codex_phase == AgentPhase.RESUME:
+            return SessionStatus.JOB_PARSED if session.job_snapshot else SessionStatus.CREATED
+        return SessionStatus.APPLICATION_STARTED
+
+    @staticmethod
+    def _step_after_user_answer(session) -> str:
+        if session.active_codex_phase == AgentPhase.RESUME:
+            return "resume_generation"
+        return "application_started"
 
     @staticmethod
     def _help_text() -> str:
@@ -372,15 +415,27 @@ def poll_telegram_updates(
     poll_timeout_seconds: int = 30,
     idle_sleep_seconds: float = 1.0,
     start_offset: int | None = None,
+    error_sleep_seconds: float = 5.0,
 ) -> None:
     logger.info(
-        "telegram_polling_started poll_timeout_seconds=%s start_offset=%s",
+        "telegram_polling_started poll_timeout_seconds=%s start_offset=%s error_sleep_seconds=%s",
         poll_timeout_seconds,
         start_offset,
+        error_sleep_seconds,
     )
     offset = start_offset
     while True:
-        updates = bot_client.get_updates(offset=offset, timeout=poll_timeout_seconds)
+        try:
+            updates = bot_client.get_updates(offset=offset, timeout=poll_timeout_seconds)
+        except RuntimeError:
+            logger.exception(
+                "telegram_polling_get_updates_failed offset=%s poll_timeout_seconds=%s",
+                offset,
+                poll_timeout_seconds,
+            )
+            if error_sleep_seconds > 0:
+                time.sleep(error_sleep_seconds)
+            continue
         if not updates:
             if idle_sleep_seconds > 0:
                 time.sleep(idle_sleep_seconds)
@@ -400,7 +455,14 @@ def poll_telegram_updates(
                 len(messages),
             )
             for message in messages:
-                bot_client.send_message(message.chat_id, message.text)
+                try:
+                    bot_client.send_message(message.chat_id, message.text)
+                except RuntimeError:
+                    logger.exception(
+                        "telegram_polling_send_message_failed update_id=%s chat_id=%s",
+                        update_id,
+                        message.chat_id,
+                    )
 
             if isinstance(update_id, int):
                 offset = update_id + 1

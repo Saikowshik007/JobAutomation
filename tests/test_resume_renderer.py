@@ -7,6 +7,7 @@ from uuid import uuid4
 sys.path.insert(0, str((Path(__file__).resolve().parent.parent / "mcp" / "resume_renderer_mcp" / "src").resolve()))
 
 from resume_renderer_mcp.renderer import (
+    get_base_resume_yaml,
     get_resume_template_yaml,
     render_resume_from_yaml,
     sanitize_path_component,
@@ -78,6 +79,17 @@ def test_get_resume_template_yaml_reads_template() -> None:
 
     assert Path(result.template_path) == template_path.resolve()
     assert result.yaml_template == "basic:\n  name: Test\n"
+
+
+def test_get_base_resume_yaml_reads_repo_base_resume() -> None:
+    workspace_root = Path(__file__).resolve().parent.parent
+
+    result = get_base_resume_yaml(workspace_root=workspace_root)
+
+    assert Path(result.base_resume_path) == (
+        workspace_root / "resume" / "OriginalResume" / "Base" / "Sai_Kowshik_Ananthula.yaml"
+    ).resolve()
+    assert 'name: "Sai Kowshik Ananthula"' in result.resume_yaml
 
 
 def test_render_resume_from_yaml_creates_pdf_and_yaml() -> None:

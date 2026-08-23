@@ -146,8 +146,6 @@ class FirestoreSessionStore(SessionStore):
         self._session_doc(session_id).set(
             {
                 "pending_question_id": None,
-                "status": SessionStatus.APPLICATION_STARTED.value,
-                "current_step": "application_started",
                 "updated_at": _utc_now().isoformat(),
             },
             merge=True,

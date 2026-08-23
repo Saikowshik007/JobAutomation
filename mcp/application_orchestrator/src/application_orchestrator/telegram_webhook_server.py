@@ -3,16 +3,21 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+from pathlib import Path
 
 from application_orchestrator.config import FirestoreSettings, load_local_env
 from application_orchestrator.firestore_store import FirestoreSessionStore
+from application_orchestrator.runner import BackgroundApplicationAgentRunner, CodexCliAgentExecutor
 from application_orchestrator.service import SessionOrchestrator
 from application_orchestrator.telegram_adapter import (
     TelegramBotClient,
     TelegramCommandRouter,
+    TelegramQuestionNotifier,
     poll_telegram_updates,
     run_telegram_webhook_server,
 )
+
+WORKSPACE_ROOT = Path(__file__).resolve().parents[4]
 
 
 def build_argument_parser() -> argparse.ArgumentParser:
@@ -64,12 +69,18 @@ def main() -> None:
     settings = FirestoreSettings.from_env()
     store = FirestoreSessionStore(settings)
     orchestrator = SessionOrchestrator(store, default_user_id=settings.default_user_id)
+    bot_client = TelegramBotClient(bot_token)
+    runner = BackgroundApplicationAgentRunner(
+        orchestrator,
+        executor=CodexCliAgentExecutor(workspace_root=WORKSPACE_ROOT),
+        notifier=TelegramQuestionNotifier(bot_client),
+    )
     router = TelegramCommandRouter(
         orchestrator,
         workflow_name=args.workflow_name,
         workflow_version=args.workflow_version,
+        runner=runner,
     )
-    bot_client = TelegramBotClient(bot_token)
     if args.mode == "webhook":
         run_telegram_webhook_server(
             args.host,

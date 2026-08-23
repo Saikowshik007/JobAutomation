@@ -158,6 +158,7 @@ class SessionOrchestrator:
         *,
         question_id: str,
         answer: str,
+        status: SessionStatus | None = None,
         current_step: str | None = None,
         current_action: str | None = None,
         last_checkpoint: str | None = None,
@@ -175,6 +176,8 @@ class SessionOrchestrator:
             or attempt_count is not None
         ):
             updates: dict[str, Any] = {}
+            if status is not None:
+                updates["status"] = status.value
             if current_step is not None:
                 updates["current_step"] = current_step
             if current_action is not None:

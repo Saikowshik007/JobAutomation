@@ -39,6 +39,11 @@ class ArtifactKind(StrEnum):
     OTHER = "other"
 
 
+class AgentPhase(StrEnum):
+    RESUME = "resume"
+    APPLICATION = "application"
+
+
 class PendingQuestion(StrictModel):
     question_id: str = Field(default_factory=lambda: uuid4().hex)
     field_key: str
@@ -79,6 +84,9 @@ class ApplicationSession(StrictModel):
     user_id: str = "local-user"
     external_thread_id: str | None = None
     telegram_chat_id: str | None = None
+    active_codex_phase: AgentPhase | None = None
+    resume_codex_thread_id: str | None = None
+    application_codex_thread_id: str | None = None
     job_snapshot: dict[str, Any] = Field(default_factory=dict)
     known_answers: dict[str, str] = Field(default_factory=dict)
     pending_question_id: str | None = None

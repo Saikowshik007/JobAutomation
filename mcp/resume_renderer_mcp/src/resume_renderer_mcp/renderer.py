@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 
 RESUMES_DIRNAME = "resume"
 DEFAULT_TEMPLATE_PATH = Path("templates") / "resume-template.yaml"
+DEFAULT_BASE_RESUME_PATH = Path("templates") / "resume-template.yaml"
 DEFAULT_OUTPUT_ROOT = Path(__file__).resolve().parents[4]
 
 
@@ -93,6 +94,11 @@ class ResumeTemplateYamlResult(StrictModel):
     yaml_template: str
 
 
+class ResumeBaseYamlResult(StrictModel):
+    base_resume_path: str
+    resume_yaml: str
+
+
 class ResumeRenderResult(StrictModel):
     yaml_path: str
     pdf_path: str
@@ -116,7 +122,24 @@ def get_resume_template_yaml(
     )
 
 
-def render_resume_from_yaml(
+def get_base_resume_yaml(
+    *,
+    workspace_root: Path = DEFAULT_OUTPUT_ROOT,
+    base_resume_path: Path | None = None,
+) -> ResumeBaseYamlResult:
+    resolved_base_resume_path = (
+        (workspace_root / base_resume_path).resolve()
+        if base_resume_path is not None
+        else (workspace_root / DEFAULT_BASE_RESUME_PATH).resolve()
+    )
+    resume_yaml = resolved_base_resume_path.read_text(encoding="utf-8")
+    return ResumeBaseYamlResult(
+        base_resume_path=str(resolved_base_resume_path),
+        resume_yaml=resume_yaml,
+    )
+
+
+async def render_resume_from_yaml_async(
     resume_yaml: str,
     *,
     company_name: str,
@@ -139,7 +162,7 @@ def render_resume_from_yaml(
     yaml_path.write_text(resume_yaml, encoding="utf-8")
 
     html_document = build_resume_html(data)
-    asyncio.run(render_pdf_from_html(html_document, pdf_path))
+    await render_pdf_from_html(html_document, pdf_path)
 
     if not pdf_path.exists():
         raise RuntimeError(f"PDF was not created at expected path: {pdf_path}")
@@ -148,6 +171,23 @@ def render_resume_from_yaml(
         yaml_path=str(yaml_path),
         pdf_path=str(pdf_path),
         artifact_dir=str(artifact_dir),
+    )
+
+
+def render_resume_from_yaml(
+    resume_yaml: str,
+    *,
+    company_name: str,
+    position_title: str,
+    output_root: Path = DEFAULT_OUTPUT_ROOT,
+) -> ResumeRenderResult:
+    return asyncio.run(
+        render_resume_from_yaml_async(
+            resume_yaml,
+            company_name=company_name,
+            position_title=position_title,
+            output_root=output_root,
+        )
     )
 
 

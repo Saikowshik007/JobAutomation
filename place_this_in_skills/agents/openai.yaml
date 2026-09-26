@@ -1,0 +1,16 @@
+interface:
+  display_name: "Resume End-to-End"
+  short_description: "Tailor resumes to improve interview odds"
+  default_prompt: "Use $resume-end-to-end to tailor the base resume for a specific job URL or pasted job description, optimize it to increase interview chances without inventing facts, and render the final PDF artifacts."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "job_intelligence"
+      description: "Parses a job posting URL into compact structured job text."
+    - type: "mcp"
+      value: "resume_renderer"
+      description: "Loads the base YAML resume and renders tailored YAML and PDF artifacts."
+
+policy:
+  allow_implicit_invocation: true

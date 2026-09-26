@@ -5,24 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e5915867-56b8-4f2b-baf8-05c9691503a4" name="Changes" comment="added resume rendering mcp">
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/job-application-flow.mmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mcp/application_orchestrator/pyproject.toml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mcp/application_orchestrator/src/application_orchestrator/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mcp/application_orchestrator/src/application_orchestrator/config.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mcp/application_orchestrator/src/application_orchestrator/firestore_store.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mcp/application_orchestrator/src/application_orchestrator/models.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mcp/application_orchestrator/src/application_orchestrator/runner.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mcp/application_orchestrator/src/application_orchestrator/service.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mcp/application_orchestrator/src/application_orchestrator/store.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mcp/application_orchestrator/src/application_orchestrator/telegram_adapter.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mcp/application_orchestrator/src/application_orchestrator/telegram_webhook_server.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/minimal-session-schema.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pause-resume-architecture.mmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/recommended-repo-structure.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/place_this_in_skills/SKILL.md" beforeDir="false" afterPath="$PROJECT_DIR$/place_this_in_skills/SKILL.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/resume-template.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/templates/resume-template.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_application_orchestrator.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_application_orchestrator_firestore_integration.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -185,7 +170,7 @@
       <workItem from="1787460068470" duration="2998000" />
       <workItem from="1787539713634" duration="2395000" />
       <workItem from="1789435515990" duration="168000" />
-      <workItem from="1790443191187" duration="924000" />
+      <workItem from="1790443191187" duration="3856000" />
     </task>
     <task id="LOCAL-00001" summary="added resume rendering mcp">
       <option name="closed" value="true" />

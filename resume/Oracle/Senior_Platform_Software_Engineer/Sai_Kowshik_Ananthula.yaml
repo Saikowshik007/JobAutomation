@@ -1,0 +1,168 @@
+basic:
+  name: "Sai Kowshik Ananthula"
+  address: "Austin, TX"
+  email: "askowshik@outlook.com"
+  phone: "+1 (470)-815-6620"
+  websites:
+    - "https://linkedin.com/in/ask7"
+    - "https://saikowshik007.github.io"
+
+education:
+  - school: "Georgia State University"
+    degrees:
+      - names:
+          - "M.S. Computer Science"
+        gpa: "3.9"
+        dates: "August 2021 - May 2023"
+  - school: "GITAM University"
+    degrees:
+      - names:
+          - "B.S. Computer Science"
+        gpa: "3.9"
+        dates: "June 2017 - May 2021"
+
+experiences:
+  - company: "Oracle"
+    location: "Austin, TX"
+    titles:
+      - name: "Senior Member of Technical Staff"
+        startdate: "February 2026"
+        enddate: "Present"
+    highlights:
+      - "Designed and delivered 40+ distributed control-plane APIs for autonomous Oracle Cloud Infrastructure workflows, covering resource lifecycle management, orchestration, state retrieval, cancellation, and validation across multiple backend services."
+      - "Spearheaded persistence, controller, accessor, and validation layers for complex backend APIs, connecting service contracts to asynchronous durable state and operational workflows."
+      - "Implemented idempotent mutation workflows using retry tokens, ensuring duplicate client requests could be safely retried without creating inconsistent resource state."
+      - "Applied optimistic-concurrency principles to resource updates, using version and action-clock semantics to prevent stale writes and eliminate unnecessary database validation logic by more than 50%."
+      - "Built resilient service interfaces using gRPC/API contracts, clearly defining request-response behavior, failure handling, error codes, and integration patterns for downstream consumers."
+      - "Designed infrastructure data models and evolved them into explicit parent-child relationships, improving orchestration semantics, queryability, and long-term maintainability."
+      - "Authored comprehensive API specifications for a growing platform surface, creating consistent resource contracts, error behavior, and integration guidance that reduced ambiguity for developers and stakeholders."
+      - "Created developer tooling that connects source control, documentation, and issue tracking context to AI-assisted workflows using model context protocols, accelerating investigation, code reviews, design decisions, and root-cause analysis."
+      - "Developed more than 20+ codex AI skills ranging from autonomous debugging of production issues, peer reviews, correctness and consistency of generated code with repository that improved developers efficiency by 60% observed over 1 month."
+  - company: "International Business Machines (IBM)"
+    location: "Austin, TX"
+    titles:
+      - name: "Software Engineer (IBM Verify)"
+        startdate: "January 2024"
+        enddate: "February 2026"
+    highlights:
+      - "Designed and built a distributed real-time notification pipeline using AWS IoT Core and Apache Kafka, reducing latency by 30% and reliably processing over 1M daily events."
+      - "Developed scalable REST APIs and optimized PostgreSQL and MSSQL schemas, achieving 99.99% uptime and sub-100ms latency through advanced query tuning and connection pooling strategies."
+      - "Drove OpenShift Container Platform migration across US and India teams, implementing CI/CD pipelines and automated testing to cut deployment time by 60% and downtime by 40%."
+      - "Served on-call for IBM Verify, triaging and resolving 40+ production incidents weekly while meeting 99% SLA compliance, reducing MTTR by 10%, and improving recurring-incident resolution through log analysis, troubleshooting, and stakeholder coordination."
+      - "Improved system resilience and throughput by introducing shared subscription models and load balancing, reducing message processing overhead by 50%."
+      - "Contributed to the upgrade of IBM MaaS360 VPN infrastructure, achieving 20% performance gains through network-level optimizations with zero-downtime deployment."
+      - "Delivered a mission-critical Digital Badge platform projected to save $16M annually by replacing legacy systems with scalable backend services, improving physical access workflows for 350K+ employees."
+      - "Collaborated with cross-functional teams and external clients to define requirements and present technical solutions to C-level executives."
+  - company: "Global Payments Inc"
+    location: "Columbus, GA"
+    titles:
+      - name: "Software Engineer"
+        startdate: "January 2023"
+        enddate: "December 2023"
+    highlights:
+      - "Orchestrated an Apache Airflow and Kubernetes pipeline for 5M+ daily transactions, increasing throughput by 60% via parallelized Docker containers and Kafka partitioning."
+      - "Built enterprise Java and Spring Boot applications and RESTful services, improving data-processing speed by 30% and system efficiency by 50%."
+      - "Engineered a low-latency client transaction pipeline using Airflow, Kubernetes, Kafka, and Docker, achieving a 60% increase in batch-processing efficiency."
+      - "Used AWS EC2, S3, and Lambda to migrate mainframe processing to event driven architecture by improving resilience by 50% and reduce operational costs by 30%."
+      - "Implemented Jenkins CI/CD pipelines that accelerated deployment cycles by 40%, while deploying AWS services with 20% lower operational costs and 30% faster releases."
+      - "Pioneered dynamic, responsive React interfaces, reducing page-load times by 50% and increasing user engagement by 35%."
+  - company: "Global Payments"
+    location: "Atlanta, GA"
+    titles:
+      - name: "Software Engineer Intern"
+        startdate: "March 2022"
+        enddate: "August 2022"
+    highlights:
+      - "Developed Java and Spring Boot microservices and RESTful APIs that improved data-processing speed by 30% and system efficiency by 50%."
+      - "Developed POJOs and DAOs for 80+ database entities using Spring JDBC and MyBatis, optimizing backend connectivity in a Controller-Service layered architecture."
+      - "Launched backend APIs and frontend UI with Java, React, Spring Boot, EC2, S3, and REST APIs, improving mainframe-pipeline scalability and robustness by 80%."
+  - company: "Georgia State University"
+    location: "Atlanta, GA"
+    titles:
+      - name: "Graduate Software Engineer (Research)"
+        startdate: "August 2021"
+        enddate: "December 2022"
+    highlights:
+      - "Conducted experiments to improve scalable automobile safety with object detection and IoT sensors, reducing overall system power consumption by 30%."
+      - "Developed a collision-detection algorithm that outperformed baseline approaches and collected test results using Python, JavaScript, SQL, and Java."
+
+projects:
+  - name: "Job Agent AI"
+    technologies: "React, FastAPI, PostgreSQL, OpenAI GPT-4, Docker, AWS"
+    link: ""
+    highlights:
+      - "Built a responsive React frontend with real-time status tracking, PDF generation, and Simplify.jobs integration for an AI-powered job application platform."
+      - "Architected a FastAPI backend with PostgreSQL, multi-layer caching, and asynchronous resume-generation processing."
+      - "Implemented ATS keyword matching and job-specific content tailoring, and deployed the platform with Docker and comprehensive API documentation."
+  - name: "IBM -- Power Patrol"
+    technologies: "Python, IBM Cloud, XGBoost, Streamlit, FastAPI"
+    link: ""
+    highlights:
+      - "Designed and deployed a real-time Streamlit ML dashboard for server-resource pattern analysis and predictive infrastructure planning."
+      - "Built a modular Gaussian Mixture Model and XGBoost pipeline to segment server-usage behavior and predict resource needs."
+      - "Engineered custom feature engineering across 18+ metrics, model persistence, and real-time anomaly detection using Pandas, scikit-learn, and Plotly."
+      - "Delivered team- and organization-level insights through interactive visualizations, config-driven analysis, and seamless model retraining."
+
+skills:
+  - category: "Languages"
+    skills:
+      - "Java"
+      - "Python"
+      - "JavaScript"
+      - "SQL"
+  - category: "Backend"
+    skills:
+      - "Spring Boot"
+      - "FastAPI"
+      - "REST APIs"
+      - "gRPC"
+      - "Microservices"
+      - "Distributed Systems"
+      - "Event-Driven Architecture"
+      - "Asynchronous Processing"
+      - "Idempotency"
+      - "Optimistic Concurrency Control"
+  - category: "Cloud, Infrastructure & DevOps"
+    skills:
+      - "Oracle Cloud Infrastructure (OCI)"
+      - "AWS"
+      - "EC2"
+      - "S3"
+      - "Lambda"
+      - "Kubernetes"
+      - "Docker"
+      - "OpenShift"
+      - "Jenkins"
+      - "CI/CD"
+      - "AWS IoT Core"
+  - category: "Data & Messaging"
+    skills:
+      - "Apache Kafka"
+      - "Apache Airflow"
+      - "PostgreSQL"
+      - "Microsoft SQL Server"
+      - "Spring JDBC"
+      - "MyBatis"
+      - "Data Modeling"
+      - "Query Optimization"
+      - "Connection Pooling"
+  - category: "Testing & Operations"
+    skills:
+      - "JUnit"
+      - "Mockito"
+      - "Load Balancing"
+      - "Production Support"
+      - "Incident Response"
+      - "API Documentation"
+  - category: "AI & Applied ML"
+    skills:
+      - "OpenAI GPT-5"
+      - "Prompt Engineering"
+      - "LLM Application Development"
+      - "AI Workflow Automation"
+      - "XGBoost"
+      - "Scikit-learn"
+      - "Pandas"
+      - "Anomaly Detection"
+
+objective: ""
